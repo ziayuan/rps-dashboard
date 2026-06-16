@@ -24,7 +24,7 @@ from pathlib import Path
 import pandas as pd
 
 
-US_PERIODS = (50, 120, 250)
+US_PERIODS = (30, 50, 120, 250)
 CRYPTO_PERIODS = (30, 90, 180)
 MACRO_PERIODS = (20, 60, 120)
 
@@ -116,8 +116,9 @@ def add_us_screen_flags(data: pd.DataFrame) -> pd.DataFrame:
         | ((data["low"] <= data["ma20"] * 1.03) & (data["close"] > data["ma20"]))
         | (data["close"] >= data["highest_20_prev"])
     )
+    short_rps = data["rps50"] if "rps50" in data.columns else data["rps_short"]
     data["watchlist"] = data["rps_max"] >= 90
-    data["core_watchlist"] = (data["rps_max"] >= 95) & (data["rps_short"] >= 90)
+    data["core_watchlist"] = (data["rps_max"] >= 95) & (short_rps >= 90)
     data["strong_trend"] = structure
     data["pocket_pivot"] = (
         data["watchlist"]
@@ -178,6 +179,8 @@ def main() -> None:
     data = load_ohlcv(args.input)
     data = add_group_indicators(data)
     data = add_rps(data, periods)
+    if args.market == "us":
+        data["rps_short"] = data["rps50"]
 
     screened = add_us_screen_flags(data) if args.market == "us" else add_crypto_screen_flags(data)
     if args.mode == "signals":

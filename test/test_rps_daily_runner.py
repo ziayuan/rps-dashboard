@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pandas as pd
 
+from tools import rps_pocket_pivot_scanner as scanner
 from tools.rps_daily_runner import (
     append_ohlcv,
     macro_asset_symbols,
@@ -405,6 +406,33 @@ class RpsDailyRunnerTest(unittest.TestCase):
             self.assertTrue(outputs["signals"].exists())
             self.assertIn("watchlist", pd.read_csv(outputs["watchlist"]).columns)
             self.assertIn("pocket_pivot", pd.read_csv(outputs["signals"]).columns)
+
+    def test_run_scans_outputs_us_rps30_without_changing_core_watchlist_basis(self):
+        self.assertEqual(scanner.US_PERIODS, (30, 50, 120, 250))
+        data = pd.DataFrame(
+            {
+                "rps_max": [96.0, 96.0],
+                "rps30": [95.0, 80.0],
+                "rps50": [80.0, 95.0],
+                "close": [20.0, 20.0],
+                "ma10": [19.0, 19.0],
+                "ma20": [18.0, 18.0],
+                "ma50": [17.0, 17.0],
+                "ma150": [16.0, 16.0],
+                "ma200": [15.0, 15.0],
+                "ma200_20_ago": [15.0, 15.0],
+                "highest_252": [22.0, 22.0],
+                "highest_20_prev": [19.0, 19.0],
+                "low": [18.0, 18.0],
+                "up_day": [False, False],
+                "volume_signature": [False, False],
+            }
+        )
+
+        screened = scanner.add_us_screen_flags(data)
+
+        self.assertFalse(bool(screened.loc[0, "core_watchlist"]))
+        self.assertTrue(bool(screened.loc[1, "core_watchlist"]))
 
     def test_run_scans_outputs_only_latest_date_rows(self):
         with tempfile.TemporaryDirectory() as tmp:

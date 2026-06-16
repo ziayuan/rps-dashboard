@@ -14,7 +14,7 @@ const BASE_COLUMNS = [
   "rps_max",
 ];
 
-const US_RPS_COLUMNS = ["rps50", "rps120", "rps250"];
+const US_RPS_COLUMNS = ["rps30", "rps50", "rps120", "rps250"];
 const CRYPTO_RPS_COLUMNS = ["rps30", "rps90", "rps180"];
 const MACRO_RPS_COLUMNS = ["rps20", "rps60", "rps120"];
 const MACRO_COLUMNS = [
@@ -30,6 +30,7 @@ const MACRO_COLUMNS = [
   "volume",
 ];
 const RPS_THRESHOLD_INPUTS = [
+  ["rps30", "rps30Min"],
   ["rps50", "rps50Min"],
   ["rps120", "rps120Min"],
   ["rps250", "rps250Min"],
@@ -79,7 +80,7 @@ const helpText = {
   rps60: "宏观资产最近 60 根共同交易日的相对强弱排名，用来看约 1 个季度的大类资产强度。",
   rps120: "最近 120 根 K 线/共同交易日的相对强弱排名。美股约半年，宏观资产约半年。",
   rps250: "美股最近 250 根日线的相对强弱排名，用来看接近一年维度的强度。",
-  rps30: "加密货币最近 30 根 4H K 线的相对强弱排名。",
+  rps30: "美股最近 30 根日线的相对强弱排名；加密货币是最近 30 根 4H K 线。",
   rps90: "加密货币最近 90 根 4H K 线的相对强弱排名。",
   rps180: "加密货币最近 180 根 4H K 线的相对强弱排名。",
   asset_name: "宏观资产名称，例如 Nasdaq 100、Gold、Bitcoin。",

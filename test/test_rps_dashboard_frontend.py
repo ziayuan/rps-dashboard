@@ -57,6 +57,7 @@ class RpsDashboardFrontendTest(unittest.TestCase):
     def test_dashboard_displays_full_us_rps_period_columns(self):
         script = read_dashboard_file("app.js")
 
+        self.assertIn('"rps30"', script)
         self.assertIn('"rps50"', script)
         self.assertIn('"rps120"', script)
         self.assertIn('"rps250"', script)
@@ -76,10 +77,12 @@ class RpsDashboardFrontendTest(unittest.TestCase):
         html = read_dashboard_file("index.html")
         script = read_dashboard_file("app.js")
 
+        self.assertIn('id="rps30Min"', html)
         self.assertIn('id="rps50Min"', html)
         self.assertIn('id="rps120Min"', html)
         self.assertIn('id="rps250Min"', html)
         self.assertIn("rpsThresholdPasses", script)
+        self.assertIn('"rps30"', script)
         self.assertIn('"rps50"', script)
         self.assertIn('"rps120"', script)
         self.assertIn('"rps250"', script)

@@ -6,7 +6,7 @@
 
 ## 功能
 
-- 美股 RPS：基于本地日线，计算 `RPS 50 / 120 / 250`，输出 Signals 和 Watchlist。
+- 美股 RPS：基于本地日线，计算 `RPS 30 / 50 / 120 / 250`，输出 Signals 和 Watchlist。
 - Crypto RPS：基于 Binance 4H K 线，计算 `RPS 30 / 90 / 180`。
 - Macro RPS：对比 `QQQ / SPY / IWM / GLD / DBC / TLT / HYG / UUP / EEM / BTCUSDT` 的大类资产强弱，计算 `RPS 20 / 60 / 120`。
 - 口袋支点：美股和 Crypto 表格里保留 pocket pivot、volume signature、strong trend 等字段。

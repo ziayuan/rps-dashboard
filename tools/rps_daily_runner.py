@@ -957,6 +957,8 @@ def run_scans(input_dir: Path, output_dir: Path, market: str, timeframe: str, pr
             raise ValueError(f"Unsupported scan market: {market}")
         data = scanner.add_rps(data, periods)
         if market == "us":
+            data["rps_short"] = data["rps50"]
+        if market == "us":
             screened = scanner.add_us_screen_flags(data)
         elif market == "crypto":
             screened = scanner.add_crypto_screen_flags(data)
