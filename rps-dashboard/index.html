@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RPS Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>RPS 研究台</h1>
+        <p id="subtitle">Russell-like broad US stocks / RPS / Pocket Pivot</p>
+      </div>
+      <div class="actions">
+        <button id="backfillUsBtn" class="primary" title="只补美股缺失行情数据，不重新计算排名">
+          <span aria-hidden="true">↻</span>
+          <span>补美股数据</span>
+        </button>
+        <button id="backfillCryptoBtn" class="primary" title="只补 Crypto 4H 缺失行情数据，不重新计算排名">
+          <span aria-hidden="true">↻</span>
+          <span>补 Crypto 数据</span>
+        </button>
+        <button id="backfillMacroBtn" class="primary" title="只补宏观资产日线数据，不重新计算排名">
+          <span aria-hidden="true">↻</span>
+          <span>补宏观数据</span>
+        </button>
+        <button id="repairMissingUsBtn" title="维护动作：只补美股 universe 中缺失或历史不足 250 根的 symbol">
+          <span aria-hidden="true">＋</span>
+          <span>补缺失 Symbol</span>
+        </button>
+        <button id="rankUsBtn" title="只用本地美股数据重新计算排名和信号">
+          <span aria-hidden="true">≡</span>
+          <span>算美股排名</span>
+        </button>
+        <button id="rankCryptoBtn" title="只用本地 Crypto 数据重新计算排名和信号">
+          <span aria-hidden="true">≡</span>
+          <span>算 Crypto 排名</span>
+        </button>
+        <button id="rankMacroBtn" title="只用本地宏观资产数据重新计算 RPS 排名">
+          <span aria-hidden="true">≡</span>
+          <span>算宏观排名</span>
+        </button>
+        <button id="reloadBtn" title="重新读取最新报告">
+          <span aria-hidden="true">⟳</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="status-grid" aria-label="运行状态">
+        <div class="metric">
+          <span>报告日期</span>
+          <select id="reportSelect" aria-label="报告日期"></select>
+        </div>
+        <div class="metric">
+          <span>行情日期</span>
+          <strong id="marketDate">-</strong>
+        </div>
+        <div class="metric">
+          <span>Signals</span>
+          <strong id="signalCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>Watchlist</span>
+          <strong id="watchlistCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>状态</span>
+          <strong id="runState">空闲</strong>
+        </div>
+      </section>
+
+      <section id="healthPanel" class="health-panel" aria-label="数据健康状态">
+        <div>
+          <span class="health-label">美股数据健康</span>
+          <strong id="usHealthText">-</strong>
+        </div>
+        <div>
+          <span class="health-label">Crypto 数据健康</span>
+          <strong id="cryptoHealthText">-</strong>
+        </div>
+        <div>
+          <span class="health-label">宏观数据健康</span>
+          <strong id="macroHealthText">-</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="side-panel">
+          <div class="panel-title">表格</div>
+          <nav id="tabs" class="tabs"></nav>
+          <div class="filter-block">
+            <label for="searchInput">搜索</label>
+            <input id="searchInput" type="search" placeholder="Ticker / Tier" />
+          </div>
+          <div class="filter-block">
+            <label for="tierFilter">Tier</label>
+            <div class="tier-filter">
+              <button id="tierFilter" class="tier-filter-button" type="button" aria-expanded="false" aria-haspopup="true">
+                A, B, C
+              </button>
+              <div id="tierMenu" class="tier-menu" hidden>
+                <label class="menu-check">
+                  <input class="tier-choice" type="checkbox" data-tier="A" checked />
+                  <span>A</span>
+                </label>
+                <label class="menu-check">
+                  <input class="tier-choice" type="checkbox" data-tier="B" checked />
+                  <span>B</span>
+                </label>
+                <label class="menu-check">
+                  <input class="tier-choice" type="checkbox" data-tier="C" checked />
+                  <span>C</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="filter-block">
+            <label>RPS 下限</label>
+            <div class="rps-filter-grid">
+              <label class="rps-filter">
+                <span>50</span>
+                <input id="rps50Min" type="number" min="0" max="100" step="1" placeholder="-" />
+              </label>
+              <label class="rps-filter">
+                <span>120</span>
+                <input id="rps120Min" type="number" min="0" max="100" step="1" placeholder="-" />
+              </label>
+              <label class="rps-filter">
+                <span>250</span>
+                <input id="rps250Min" type="number" min="0" max="100" step="1" placeholder="-" />
+              </label>
+            </div>
+          </div>
+          <label class="check-row">
+            <input id="onlyStrong" type="checkbox" />
+            <span>只看 strong trend</span>
+          </label>
+          <label class="check-row">
+            <input id="onlyCore" type="checkbox" />
+            <span>只看 core watchlist</span>
+          </label>
+          <div class="log-title">刷新日志</div>
+          <pre id="logs" class="logs"></pre>
+        </aside>
+
+        <section class="table-panel">
+          <div class="table-toolbar">
+            <div>
+              <h2 id="tableTitle">Signals</h2>
+              <p id="tableMeta">-</p>
+              <p id="fieldHelp" class="field-help">点击表头可排序；悬停或点击表头可查看字段说明。</p>
+            </div>
+            <a id="downloadLink" class="download" href="#" target="_blank">下载 CSV</a>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr id="tableHead"></tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
