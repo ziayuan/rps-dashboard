@@ -12,6 +12,7 @@ from tools.rps_daily_runner import (
     grouped_daily_to_symbol_frames,
     filter_us_tradable_universe,
     grouped_backfill_start,
+    latest_polygon_grouped_available_date,
     load_env_values,
     market_date_range,
     parse_sptm_holdings,
@@ -259,6 +260,22 @@ class RpsDailyRunnerTest(unittest.TestCase):
         )
 
         self.assertEqual([day.strftime("%Y-%m-%d") for day in days], ["2026-06-12", "2026-06-15"])
+
+    def test_latest_polygon_grouped_available_date_waits_for_eod_delay(self):
+        latest = latest_polygon_grouped_available_date(
+            pd.Timestamp("2026-06-16T03:21:00Z").to_pydatetime(),
+            delay_hours=8,
+        )
+
+        self.assertEqual(latest.strftime("%Y-%m-%d"), "2026-06-12")
+
+    def test_latest_polygon_grouped_available_date_includes_previous_session_after_delay(self):
+        latest = latest_polygon_grouped_available_date(
+            pd.Timestamp("2026-06-16T05:00:00Z").to_pydatetime(),
+            delay_hours=8,
+        )
+
+        self.assertEqual(latest.strftime("%Y-%m-%d"), "2026-06-15")
 
     def test_filter_us_tradable_universe_keeps_liquid_common_like_rows(self):
         rows = []

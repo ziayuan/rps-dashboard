@@ -21,6 +21,7 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Iterable
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -830,6 +831,14 @@ def market_date_range(start: datetime, end: datetime) -> list[datetime]:
     return [day for day in date_range(start, end) if day.weekday() < 5]
 
 
+def latest_polygon_grouped_available_date(now: datetime, delay_hours: int = 8) -> datetime:
+    eastern_now = now.astimezone(ZoneInfo("America/New_York"))
+    candidate = (eastern_now - timedelta(hours=16 + delay_hours)).date()
+    while candidate.weekday() >= 5:
+        candidate -= timedelta(days=1)
+    return datetime(candidate.year, candidate.month, candidate.day, tzinfo=UTC)
+
+
 def update_us_grouped_data(
     data_dir: Path,
     symbols: Iterable[str],
@@ -849,7 +858,7 @@ def update_us_grouped_data(
 
     now = datetime.now(UTC)
     start = grouped_backfill_start(target_dir, symbols, lookback_days, now, force_backfill=force_backfill)
-    end = now
+    end = latest_polygon_grouped_available_date(now)
 
     rows_by_symbol: dict[str, list[pd.DataFrame]] = {}
     days = market_date_range(start, end)
