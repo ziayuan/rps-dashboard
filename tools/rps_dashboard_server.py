@@ -315,13 +315,14 @@ def refresh_command(args: argparse.Namespace) -> list[str]:
         )
         if args.force_backfill:
             command.append("--force-backfill")
-    if should_include_update_flags and "crypto" in {item.strip() for item in args.markets.split(",")}:
+    selected_markets = {item.strip() for item in args.markets.split(",")}
+    if "crypto" in selected_markets:
+        command.extend(["--crypto-timeframes", args.crypto_timeframes])
+    if should_include_update_flags and "crypto" in selected_markets:
         command.extend(
             [
                 "--crypto-limit",
                 str(args.crypto_limit),
-                "--crypto-timeframes",
-                args.crypto_timeframes,
                 "--crypto-lookback-days",
                 str(args.crypto_lookback_days),
             ]

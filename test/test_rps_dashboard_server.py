@@ -178,6 +178,16 @@ class RpsDashboardServerTest(unittest.TestCase):
         self.assertIn("--crypto-timeframes", command)
         self.assertIn("4h", command)
 
+    def test_refresh_command_includes_crypto_4h_when_action_is_crypto_rank(self):
+        args = refresh_args_for_action(self.refresh_args(), "crypto-rank")
+
+        command = refresh_command(args)
+
+        self.assertIn("scan-only", command)
+        self.assertIn("--crypto-timeframes", command)
+        self.assertIn("4h", command)
+        self.assertNotIn("--crypto-limit", command)
+
     def test_refresh_command_includes_macro_lookback_when_action_is_macro_backfill(self):
         args = refresh_args_for_action(self.refresh_args(), "macro-backfill")
 
