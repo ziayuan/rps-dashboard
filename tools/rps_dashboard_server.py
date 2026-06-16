@@ -12,6 +12,8 @@ import argparse
 import copy
 import csv
 import json
+import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -34,6 +36,52 @@ REFRESH_ACTIONS = {
     "crypto-rank": ("crypto", "scan-only"),
     "macro-rank": ("macro", "scan-only"),
 }
+
+
+def python_can_import(executable: str, module: str) -> bool:
+    try:
+        result = subprocess.run(
+            [executable, "-c", f"import {module}"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+            check=False,
+        )
+    except Exception:
+        return False
+    return result.returncode == 0
+
+
+def runner_python_candidates() -> list[str]:
+    candidates = [
+        str(PROJECT_ROOT / ".venv" / "bin" / "python"),
+        str(PROJECT_ROOT / ".venv" / "bin" / "python3"),
+        sys.executable,
+        shutil.which("python3") or "",
+        shutil.which("python") or "",
+        str(Path.home() / ".cache" / "codex-runtimes" / "codex-primary-runtime" / "dependencies" / "python" / "bin" / "python3"),
+    ]
+    deduped = []
+    seen = set()
+    for candidate in candidates:
+        if candidate and candidate not in seen and Path(candidate).exists():
+            seen.add(candidate)
+            deduped.append(candidate)
+    return deduped
+
+
+def resolve_runner_python(
+    args: argparse.Namespace,
+    candidates: list[str] | None = None,
+    can_import=python_can_import,
+) -> str:
+    explicit = getattr(args, "runner_python", None) or os.environ.get("RPS_RUNNER_PYTHON")
+    if explicit:
+        return str(explicit)
+    for candidate in candidates or runner_python_candidates():
+        if can_import(candidate, "pandas"):
+            return candidate
+    return sys.executable
 
 
 def latest_report_dir(report_root: Path = DEFAULT_REPORT_ROOT) -> Path | None:
@@ -238,7 +286,7 @@ class RefreshState:
 
 def refresh_command(args: argparse.Namespace) -> list[str]:
     command = [
-        sys.executable,
+        resolve_runner_python(args),
         str(PROJECT_ROOT / "tools" / "rps_daily_runner.py"),
         "--markets",
         args.markets,
@@ -437,6 +485,10 @@ def main() -> None:
     parser.add_argument("--crypto-timeframes", default="4h")
     parser.add_argument("--crypto-lookback-days", type=int, default=420)
     parser.add_argument("--macro-lookback-days", type=int, default=420)
+    parser.add_argument(
+        "--runner-python",
+        help="Python executable used for refresh jobs. Defaults to the first local Python that can import pandas.",
+    )
     args = parser.parse_args()
 
     state = RefreshState()

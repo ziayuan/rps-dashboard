@@ -8,6 +8,7 @@ from tools.rps_dashboard_server import (
     data_health_payload,
     latest_report_dir,
     read_csv_records,
+    resolve_runner_python,
     refresh_args_for_action,
     refresh_command,
     table_payload,
@@ -58,6 +59,7 @@ class RpsDashboardServerTest(unittest.TestCase):
             crypto_timeframes="4h",
             crypto_lookback_days=420,
             macro_lookback_days=420,
+            runner_python=None,
         )
 
     def test_data_health_payload_counts_missing_and_short_us_history(self):
@@ -218,6 +220,27 @@ class RpsDashboardServerTest(unittest.TestCase):
         self.assertIn("scan-only", command)
         self.assertNotIn("--us-provider", command)
         self.assertNotIn("--crypto-timeframes", command)
+
+    def test_refresh_command_uses_explicit_runner_python(self):
+        args = self.refresh_args()
+        args.runner_python = "/tmp/rps-python"
+
+        command = refresh_command(args)
+
+        self.assertEqual(command[0], "/tmp/rps-python")
+
+    def test_resolve_runner_python_skips_candidates_without_pandas(self):
+        args = self.refresh_args()
+        args.runner_python = None
+        candidates = ["/tmp/no-pandas-python", "/tmp/with-pandas-python"]
+
+        chosen = resolve_runner_python(
+            args,
+            candidates=candidates,
+            can_import=lambda executable, module: executable == "/tmp/with-pandas-python" and module == "pandas",
+        )
+
+        self.assertEqual(chosen, "/tmp/with-pandas-python")
 
 
 if __name__ == "__main__":

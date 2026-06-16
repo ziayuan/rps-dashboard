@@ -71,6 +71,18 @@ python tools/rps_dashboard_server.py
 http://127.0.0.1:8765/
 ```
 
+Dashboard 会用一个能 `import pandas` 的 Python 解释器来运行后台刷新任务。默认探测顺序包括项目 `.venv`、当前 Python、系统 Python 和 Codex bundled Python。也可以手动指定：
+
+```bash
+python tools/rps_dashboard_server.py --runner-python /path/to/python
+```
+
+或使用环境变量：
+
+```bash
+RPS_RUNNER_PYTHON=/path/to/python python tools/rps_dashboard_server.py
+```
+
 页面里的按钮含义：
 
 - `补美股数据`：只补美股本地缺失日期，不重新计算排名。
