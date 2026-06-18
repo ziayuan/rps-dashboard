@@ -92,6 +92,18 @@ RPS_RUNNER_PYTHON=/path/to/python python tools/rps_dashboard_server.py
 - `算美股排名`：只用本地美股数据重算 Signals / Watchlist。
 - `算 Crypto 排名`：只用本地 Crypto 数据重算。
 - `算宏观排名`：只用本地宏观数据重算 Macro RPS。
+- `更新研究面板`：只在点击后生成行业/主题强度、领导股监控和宏观环境面板；不更新行情，不重算 RPS。
+
+研究面板说明：
+
+- 行业/主题强度：默认统计美股 `A+B+Core Watchlist`，输出每个主题的数量、A/B 数量、平均/中位 RPS 和代表标的。
+- 领导股监控：自动列出现任领导股，并从历史报告和手动名单里追踪老领导股是否黄灯或破位。
+- 宏观环境：基于本地 Macro RPS 判断风险偏好、风险警戒等状态。
+
+可选本地配置：
+
+- `data/rps_pp/metadata/us_theme_overrides.csv`：手动维护 `symbol,theme`，用于修正投资主题分类。
+- `data/rps_pp/metadata/us_manual_leaders.csv`：手动维护 `symbol,note`，用于加入老领导股观察名单。
 
 ## 命令行用法
 

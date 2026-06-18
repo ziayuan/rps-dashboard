@@ -41,6 +41,19 @@ class RpsDashboardFrontendTest(unittest.TestCase):
         self.assertIn("loadHealth", script)
         self.assertIn("/api/health", script)
 
+    def test_dashboard_exposes_manual_chinese_research_panels(self):
+        html = read_dashboard_file("index.html")
+        script = read_dashboard_file("app.js")
+
+        self.assertIn('id="updateResearchPanelsBtn"', html)
+        self.assertIn("更新研究面板", html)
+        self.assertIn("行业/主题强度", html)
+        self.assertIn("领导股监控", html)
+        self.assertIn("宏观环境", html)
+        self.assertIn("/api/panels", script)
+        self.assertIn('runAction("research-panels")', script)
+        self.assertIn("renderResearchPanels", script)
+
     def test_dashboard_exposes_tier_filter_control(self):
         html = read_dashboard_file("index.html")
         script = read_dashboard_file("app.js")
@@ -66,7 +79,7 @@ class RpsDashboardFrontendTest(unittest.TestCase):
     def test_dashboard_displays_macro_rps_table(self):
         script = read_dashboard_file("app.js")
 
-        self.assertIn("Macro RPS", script)
+        self.assertIn("宏观 RPS", script)
         self.assertIn("MACRO_RPS_COLUMNS", script)
         self.assertIn('"rps20"', script)
         self.assertIn('"rps60"', script)

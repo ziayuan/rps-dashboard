@@ -1,9 +1,9 @@
 const tableOrder = [
-  ["us_1d_signals", "US Signals"],
-  ["us_1d_watchlist", "US Watchlist"],
-  ["crypto_4h_signals", "Crypto 4H Signals"],
-  ["crypto_4h_watchlist", "Crypto 4H Watchlist"],
-  ["macro_1d_watchlist", "Macro RPS"],
+  ["us_1d_signals", "美股信号"],
+  ["us_1d_watchlist", "美股观察池"],
+  ["crypto_4h_signals", "Crypto 4H 信号"],
+  ["crypto_4h_watchlist", "Crypto 4H 观察池"],
+  ["macro_1d_watchlist", "宏观 RPS"],
 ];
 
 const BASE_COLUMNS = [
@@ -94,6 +94,7 @@ const helpText = {
 
 let state = {
   payload: null,
+  panels: null,
   active: "us_1d_signals",
   selectedReport: null,
   sortKey: "rps_max",
@@ -110,6 +111,7 @@ const actionButtonIds = [
   "rankUsBtn",
   "rankCryptoBtn",
   "rankMacroBtn",
+  "updateResearchPanelsBtn",
 ];
 
 function isTrue(value) {
@@ -230,7 +232,7 @@ function renderTable() {
   const rows = currentRows();
   const [_, label] = tableOrder.find(([key]) => key === state.active) || [state.active, state.active];
   $("tableTitle").textContent = label;
-  $("tableMeta").textContent = `${rows.length} rows shown`;
+  $("tableMeta").textContent = `当前显示 ${rows.length} 行`;
   const table = state.payload?.tables?.[state.active];
   $("downloadLink").href = table?.path ? `/api/download?path=${encodeURIComponent(table.path)}` : "#";
 
@@ -313,6 +315,124 @@ function compactNumber(value) {
   return Number.isFinite(n) ? Intl.NumberFormat("en", { notation: "compact" }).format(n) : "-";
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function panelNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(1) : "-";
+}
+
+function renderMiniTable(targetId, columns, rows, emptyText) {
+  const target = $(targetId);
+  if (!rows || !rows.length) {
+    target.className = "mini-table-wrap empty-panel";
+    target.textContent = emptyText;
+    return;
+  }
+  target.className = "mini-table-wrap";
+  const head = columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("");
+  const body = rows
+    .map((row) => {
+      const cells = columns
+        .map((column) => `<td>${escapeHtml(column.format ? column.format(row[column.key], row) : row[column.key])}</td>`)
+        .join("");
+      return `<tr>${cells}</tr>`;
+    })
+    .join("");
+  target.innerHTML = `<table class="mini-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function renderResearchPanels() {
+  const panels = state.panels;
+  if (!panels?.available) {
+    $("researchPanelMeta").textContent = panels?.message || "尚未生成，点击按钮后才会更新。";
+    $("themePanelCount").textContent = "-";
+    $("leadershipPanelCount").textContent = "-";
+    $("macroRegimeBadge").textContent = "-";
+    $("macroRegimeSummary").textContent = "暂无缓存。";
+    renderMiniTable("themePanelBody", [], [], "点击“更新研究面板”后生成。");
+    renderMiniTable("currentLeadersBody", [], [], "暂无缓存。");
+    renderMiniTable("formerLeadersBody", [], [], "暂无缓存。");
+    renderMiniTable("macroRegimeBody", [], [], "点击“更新研究面板”后生成。");
+    return;
+  }
+
+  const source = panels.source || {};
+  $("researchPanelMeta").textContent =
+    `报告 ${panels.reportDate || "-"} / 行情 ${panels.marketDate || "-"} / A+B+Core ${source.abCoreCount ?? 0} 只 / ` +
+    `公司资料补充 ${source.fetched ?? 0} 只`;
+
+  const themeRows = panels.themePanel?.rows || [];
+  $("themePanelCount").textContent = `${themeRows.length} 个主题`;
+  renderMiniTable(
+    "themePanelBody",
+    [
+      { key: "theme", label: "主题" },
+      { key: "count", label: "数量" },
+      { key: "aCount", label: "A" },
+      { key: "bCount", label: "B" },
+      { key: "avgRps30", label: "均30", format: panelNumber },
+      { key: "avgRps50", label: "均50", format: panelNumber },
+      { key: "avgRps120", label: "均120", format: panelNumber },
+      { key: "medianRps50", label: "中50", format: panelNumber },
+      { key: "topSymbols", label: "代表标的" },
+    ],
+    themeRows,
+    "暂无主题数据。"
+  );
+
+  const current = panels.leadership?.current || [];
+  const former = panels.leadership?.former || [];
+  $("leadershipPanelCount").textContent = `${current.length} 现任 / ${former.length} 老领导`;
+  renderMiniTable(
+    "currentLeadersBody",
+    [
+      { key: "symbol", label: "代码" },
+      { key: "theme", label: "主题" },
+      { key: "tier", label: "Tier" },
+      { key: "rpsMax", label: "RPS", format: panelNumber },
+      { key: "rps50", label: "RPS50", format: panelNumber },
+      { key: "reason", label: "理由" },
+    ],
+    current.slice(0, 20),
+    "暂无现任领导股数据。"
+  );
+  renderMiniTable(
+    "formerLeadersBody",
+    [
+      { key: "symbol", label: "代码" },
+      { key: "status", label: "状态" },
+      { key: "drawdownPct", label: "回撤%", format: panelNumber },
+      { key: "lastLeaderDate", label: "上次领先" },
+      { key: "source", label: "来源" },
+    ],
+    former.slice(0, 20),
+    "暂无老领导股数据。"
+  );
+
+  const macro = panels.macroRegime || {};
+  $("macroRegimeBadge").textContent = macro.regime || "-";
+  $("macroRegimeSummary").textContent = macro.summary || "暂无宏观摘要。";
+  renderMiniTable(
+    "macroRegimeBody",
+    [
+      { key: "name", label: "指标" },
+      { key: "value", label: "数值", format: (value) => (Number.isFinite(Number(value)) ? panelNumber(value) : value || "-") },
+      { key: "signal", label: "信号" },
+      { key: "detail", label: "说明" },
+    ],
+    macro.indicators || [],
+    "暂无宏观指标。"
+  );
+}
+
 function renderHealth(health) {
   const us = health?.us || {};
   const crypto = health?.crypto || {};
@@ -345,6 +465,14 @@ async function loadHealth() {
   renderHealth(await response.json());
 }
 
+async function loadPanels() {
+  const query = new URLSearchParams();
+  if (state.selectedReport) query.set("date", state.selectedReport);
+  const response = await fetch(`/api/panels?${query.toString()}`);
+  state.panels = await response.json();
+  renderResearchPanels();
+}
+
 function render() {
   renderSummary();
   renderTabs();
@@ -369,11 +497,13 @@ async function pollStatus() {
     state.lastLoadedFinishedAt = status.finishedAt;
     await loadTables();
     await loadHealth();
+    await loadPanels();
   }
 }
 
 async function runAction(action) {
   const query = new URLSearchParams({ action });
+  if (action === "research-panels" && state.selectedReport) query.set("date", state.selectedReport);
   const response = await fetch(`/api/refresh?${query.toString()}`, { method: "POST" });
   if (!response.ok && response.status !== 409) {
     $("logs").textContent = `refresh failed: ${response.status}`;
@@ -388,10 +518,15 @@ $("repairMissingUsBtn").addEventListener("click", () => runAction("us-repair-mis
 $("rankUsBtn").addEventListener("click", () => runAction("us-rank"));
 $("rankCryptoBtn").addEventListener("click", () => runAction("crypto-rank"));
 $("rankMacroBtn").addEventListener("click", () => runAction("macro-rank"));
-$("reloadBtn").addEventListener("click", loadTables);
+$("updateResearchPanelsBtn").addEventListener("click", () => runAction("research-panels"));
+$("reloadBtn").addEventListener("click", async () => {
+  await loadTables();
+  await loadPanels();
+});
 $("reportSelect").addEventListener("change", async (event) => {
   state.selectedReport = event.target.value;
   await loadTables();
+  await loadPanels();
 });
 $("searchInput").addEventListener("input", renderTable);
 $("tierFilter").addEventListener("click", () => {
@@ -417,5 +552,6 @@ $("onlyCore").addEventListener("change", renderTable);
 updateTierButton();
 loadTables();
 loadHealth();
+loadPanels();
 pollStatus();
 setInterval(pollStatus, 2500);

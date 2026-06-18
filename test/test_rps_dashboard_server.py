@@ -7,6 +7,7 @@ from tools.rps_dashboard_server import (
     available_report_dates,
     data_health_payload,
     latest_report_dir,
+    panels_payload,
     read_csv_records,
     resolve_runner_python,
     refresh_args_for_action,
@@ -43,6 +44,18 @@ class RpsDashboardServerTest(unittest.TestCase):
             self.assertEqual(old_payload["reportDate"], "2026-06-12")
             self.assertEqual(old_payload["tables"]["us_1d_watchlist"]["rows"][0]["symbol"], "OLD")
 
+    def test_latest_report_dir_prefers_directories_with_report_tables(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data_dir = root / "2026-06-16"
+            empty_dir = root / "2026-06-17"
+            data_dir.mkdir()
+            empty_dir.mkdir()
+            (data_dir / "us_1d_watchlist.csv").write_text("symbol,rps_max\nAAA,99\n")
+            (empty_dir / "manifest.json").write_text("{}")
+
+            self.assertEqual(latest_report_dir(root), data_dir)
+
     def refresh_args(self) -> Namespace:
         return Namespace(
             markets="us",
@@ -61,6 +74,33 @@ class RpsDashboardServerTest(unittest.TestCase):
             macro_lookback_days=420,
             runner_python=None,
         )
+
+    def test_panels_payload_reads_cached_research_panels(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report_dir = root / "2026-06-16"
+            report_dir.mkdir()
+            (report_dir / "research_panels.json").write_text(
+                '{"reportDate":"2026-06-16","themePanel":{"rows":[{"theme":"AI/数据中心芯片"}]}}'
+            )
+
+            payload = panels_payload(root, report_date="2026-06-16")
+
+            self.assertTrue(payload["available"])
+            self.assertEqual(payload["reportDate"], "2026-06-16")
+            self.assertEqual(payload["themePanel"]["rows"][0]["theme"], "AI/数据中心芯片")
+
+    def test_refresh_args_for_research_panels_uses_panel_builder(self):
+        args = self.refresh_args()
+
+        scoped = refresh_args_for_action(args, "research-panels", report_date="2026-06-16")
+        command = refresh_command(scoped)
+
+        self.assertEqual(scoped.panel_action, "research-panels")
+        self.assertIn("rps_panel_builder.py", " ".join(command))
+        self.assertIn("--report-date", command)
+        self.assertIn("2026-06-16", command)
+        self.assertNotIn("rps_daily_runner.py", " ".join(command))
 
     def test_data_health_payload_counts_missing_and_short_us_history(self):
         with tempfile.TemporaryDirectory() as tmp:

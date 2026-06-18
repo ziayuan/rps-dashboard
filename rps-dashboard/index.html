@@ -86,6 +86,52 @@
         </div>
       </section>
 
+      <section id="researchPanels" class="research-panels" aria-label="研究面板">
+        <div class="research-header">
+          <div>
+            <h2>研究面板</h2>
+            <p id="researchPanelMeta">尚未生成，点击按钮后才会更新。</p>
+          </div>
+          <button id="updateResearchPanelsBtn" class="primary" title="只更新行业/主题、领导股和宏观环境面板，不更新行情数据">
+            <span aria-hidden="true">◎</span>
+            <span>更新研究面板</span>
+          </button>
+        </div>
+        <div class="research-grid">
+          <article class="research-card theme-card">
+            <div class="card-heading">
+              <h3>行业/主题强度</h3>
+              <span id="themePanelCount">-</span>
+            </div>
+            <div id="themePanelBody" class="mini-table-wrap empty-panel">点击“更新研究面板”后生成。</div>
+          </article>
+          <article class="research-card">
+            <div class="card-heading">
+              <h3>领导股监控</h3>
+              <span id="leadershipPanelCount">-</span>
+            </div>
+            <div class="leader-columns">
+              <div>
+                <h4>现任领导股</h4>
+                <div id="currentLeadersBody" class="mini-table-wrap empty-panel">暂无缓存。</div>
+              </div>
+              <div>
+                <h4>老领导股/手动观察</h4>
+                <div id="formerLeadersBody" class="mini-table-wrap empty-panel">暂无缓存。</div>
+              </div>
+            </div>
+          </article>
+          <article class="research-card">
+            <div class="card-heading">
+              <h3>宏观环境</h3>
+              <span id="macroRegimeBadge">-</span>
+            </div>
+            <p id="macroRegimeSummary" class="macro-summary">暂无缓存。</p>
+            <div id="macroRegimeBody" class="mini-table-wrap empty-panel">点击“更新研究面板”后生成。</div>
+          </article>
+        </div>
+      </section>
+
       <section class="workspace">
         <aside class="side-panel">
           <div class="panel-title">表格</div>

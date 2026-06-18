@@ -162,6 +162,128 @@ main {
   line-height: 1.45;
 }
 
+.research-panels {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+
+.research-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.research-header p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.research-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 12px;
+  padding: 12px;
+}
+
+.research-card {
+  min-width: 0;
+  border: 1px solid #e2d8c9;
+  border-radius: 8px;
+  background: #fffaf1;
+  padding: 12px;
+}
+
+.card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.card-heading h3,
+.leader-columns h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.card-heading span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.leader-columns {
+  display: grid;
+  gap: 12px;
+}
+
+.leader-columns h4 {
+  color: #4e473d;
+  margin: 2px 0 7px;
+}
+
+.macro-summary {
+  color: #3d372f;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.mini-table-wrap {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid #eadfce;
+  border-radius: 6px;
+  background: #fffdf8;
+}
+
+.mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.mini-table th,
+.mini-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #eee4d7;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mini-table th:first-child,
+.mini-table td:first-child,
+.mini-table th:last-child,
+.mini-table td:last-child {
+  text-align: left;
+}
+
+.mini-table th {
+  top: 0;
+  background: #f4ecdd;
+  color: #50483e;
+}
+
+.empty-panel {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
@@ -451,6 +573,7 @@ tbody tr:hover {
 
   .status-grid,
   .health-panel,
+  .research-grid,
   .workspace {
     grid-template-columns: 1fr;
   }

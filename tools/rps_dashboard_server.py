@@ -27,6 +27,13 @@ from urllib.parse import parse_qs, urlparse
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REPORT_ROOT = PROJECT_ROOT / "reports" / "rps_pp"
 STATIC_ROOT = PROJECT_ROOT / "rps-dashboard"
+REPORT_TABLE_FILES = (
+    "us_1d_watchlist.csv",
+    "us_1d_signals.csv",
+    "crypto_4h_watchlist.csv",
+    "crypto_4h_signals.csv",
+    "macro_1d_watchlist.csv",
+)
 REFRESH_ACTIONS = {
     "us-backfill": ("us", "backfill"),
     "crypto-backfill": ("crypto", "backfill"),
@@ -36,6 +43,7 @@ REFRESH_ACTIONS = {
     "crypto-rank": ("crypto", "scan-only"),
     "macro-rank": ("macro", "scan-only"),
 }
+PANEL_ACTIONS = {"research-panels"}
 
 
 def python_can_import(executable: str, module: str) -> bool:
@@ -88,7 +96,8 @@ def latest_report_dir(report_root: Path = DEFAULT_REPORT_ROOT) -> Path | None:
     if not report_root.exists():
         return None
     dirs = [path for path in report_root.iterdir() if path.is_dir()]
-    return max(dirs, default=None, key=lambda path: path.name)
+    data_dirs = [path for path in dirs if any((path / name).exists() for name in REPORT_TABLE_FILES)]
+    return max(data_dirs or dirs, default=None, key=lambda path: path.name)
 
 
 def available_report_dates(report_root: Path = DEFAULT_REPORT_ROOT) -> list[str]:
@@ -239,6 +248,21 @@ def table_payload(report_root: Path = DEFAULT_REPORT_ROOT, limit: int = 500, rep
     }
 
 
+def panels_payload(report_root: Path = DEFAULT_REPORT_ROOT, report_date: str | None = None) -> dict:
+    directory = report_dir_for_date(report_root, report_date)
+    if directory is None:
+        return {"available": False, "reportDate": report_date, "message": "尚未生成研究面板。"}
+    path = directory / "research_panels.json"
+    if not path.exists():
+        return {"available": False, "reportDate": directory.name, "message": "尚未生成研究面板，请点击更新研究面板。"}
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return {"available": False, "reportDate": directory.name, "message": "研究面板缓存损坏，请重新生成。"}
+    payload["available"] = True
+    return payload
+
+
 class RefreshState:
     def __init__(self) -> None:
         self.lock = threading.Lock()
@@ -285,6 +309,24 @@ class RefreshState:
 
 
 def refresh_command(args: argparse.Namespace) -> list[str]:
+    if getattr(args, "panel_action", None) == "research-panels":
+        command = [
+            resolve_runner_python(args),
+            str(PROJECT_ROOT / "tools" / "rps_panel_builder.py"),
+            "--data-dir",
+            str(args.data_dir),
+            "--report-root",
+            str(args.report_root),
+            "--env-file",
+            str(args.env_file),
+            "--request-sleep",
+            str(args.us_request_sleep),
+        ]
+        report_date = getattr(args, "panel_report_date", None)
+        if report_date:
+            command.extend(["--report-date", report_date])
+        return command
+
     command = [
         resolve_runner_python(args),
         str(PROJECT_ROOT / "tools" / "rps_daily_runner.py"),
@@ -339,15 +381,22 @@ def refresh_command(args: argparse.Namespace) -> list[str]:
     return command
 
 
-def refresh_args_for_action(args: argparse.Namespace, action: str | None) -> argparse.Namespace:
+def refresh_args_for_action(args: argparse.Namespace, action: str | None, report_date: str | None = None) -> argparse.Namespace:
     if action is None:
         return args
+    if action in PANEL_ACTIONS:
+        scoped = copy.copy(args)
+        scoped.panel_action = action
+        scoped.panel_report_date = report_date
+        return scoped
     if action not in REFRESH_ACTIONS:
         raise ValueError(f"Unsupported refresh action: {action}")
     market, operation = REFRESH_ACTIONS[action]
     scoped = copy.copy(args)
     scoped.markets = market
     scoped.operation = operation
+    scoped.panel_action = None
+    scoped.panel_report_date = None
     return scoped
 
 
@@ -414,6 +463,11 @@ def make_handler(args: argparse.Namespace, state: RefreshState):
             if parsed.path == "/api/reports":
                 self.send_json({"reports": available_report_dates(args.report_root)})
                 return
+            if parsed.path == "/api/panels":
+                params = parse_qs(parsed.query)
+                report_date = params.get("date", [None])[0]
+                self.send_json(panels_payload(args.report_root, report_date=report_date))
+                return
             if parsed.path == "/api/download":
                 params = parse_qs(parsed.query)
                 file_path = Path(params.get("path", [""])[0])
@@ -453,8 +507,9 @@ def make_handler(args: argparse.Namespace, state: RefreshState):
                 return
             params = parse_qs(parsed.query)
             action = params.get("action", [None])[0]
+            report_date = params.get("date", [None])[0]
             try:
-                refresh_args = refresh_args_for_action(args, action)
+                refresh_args = refresh_args_for_action(args, action, report_date=report_date)
             except ValueError as error:
                 self.send_json({"started": False, "error": str(error)}, status=400)
                 return
